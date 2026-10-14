@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Datos pesados (no caben en GitHub)
+simulations/dataset/
+training/dataset_fields.csv
+
+# Logs
+*.log
+
+# Sistema / editor
+.vscode/
+.DS_Store
+Zone.Identifier
+*:Zone.Identifier
+docs/
