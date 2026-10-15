@@ -17,7 +17,7 @@ PLOTS_DIR  = SCRIPT_DIR / "plots"
 PLOTS_DIR.mkdir(exist_ok=True)
 
 sys.path.insert(0, str(SCRIPT_DIR))
-from models import GlobalForceNet  # noqa: E402 (arquitectura compartida con train_field_net.py y app.py)
+from models import GlobalForceNet  # noqa: E402 (architecture shared with train_field_net.py and app.py)
 
 
 # --- Data loading ---

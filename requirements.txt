@@ -1,0 +1,11 @@
+# Runtime dependencies for the Streamlit app (app/app.py) and the training scripts.
+# For a lighter CPU-only PyTorch install, run first:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+streamlit>=1.58
+torch>=2.6
+numpy>=2.0
+pandas>=2.2
+scikit-learn>=1.9,<1.10   # the pickled scalers in training/ were saved with 1.9.0
+joblib
+plotly>=6
+matplotlib

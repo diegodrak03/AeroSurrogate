@@ -53,11 +53,11 @@ for i, case_dir in enumerate(case_dirs):
 
         last = df_forces.tail(10).mean()
 
-        # OpenFOAM forceCoeffs se configura con ejes wind-frame fijos
-        # (e1=(1,0,0), e2=(0,0,-1); ver simulations/pipeline.py::setup_openfoam_case).
-        # El flujo de entrada siempre apunta en +x -- es el perfil el que rota
-        # con alpha, no el flujo -- asi que Cd y Cl de OpenFOAM ya son
-        # directamente drag y lift aerodinamicos, sin necesitar ninguna rotacion.
+        # OpenFOAM forceCoeffs is configured with fixed wind-frame axes
+        # (e1=(1,0,0), e2=(0,0,-1); see simulations/pipeline.py::setup_openfoam_case).
+        # The inflow always points along +x -- it is the airfoil that rotates
+        # with alpha, not the flow -- so OpenFOAM's Cd and Cl are already the
+        # aerodynamic drag and lift, with no rotation needed.
         CL_aero = last['Cl']
         CD_aero = last['Cd']
         forces_rows.append([c1, c2, c3, Re, alpha, CL_aero, CD_aero])

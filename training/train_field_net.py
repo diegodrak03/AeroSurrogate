@@ -17,7 +17,7 @@ PLOTS_DIR  = SCRIPT_DIR / "plots"
 PLOTS_DIR.mkdir(exist_ok=True)
 
 sys.path.insert(0, str(SCRIPT_DIR))
-from models import FlowFieldNet  # noqa: E402 (arquitectura compartida con train_force_net.py y app.py)
+from models import FlowFieldNet  # noqa: E402 (architecture shared with train_force_net.py and app.py)
 
 RANDOM_STATE = 42
 VAL_FRACTION = 0.2
@@ -27,7 +27,7 @@ FLOAT_COLS   = ['x', 'y', 'C1', 'C2', 'C3', 'Re', 'Alpha'] + TARGET_NAMES
 
 class FlowDataset(Dataset):
     def __init__(self, X, y):
-        # X, y ya vienen en float32 -- .float() aqui no duplica memoria.
+        # X, y are already float32 -- .float() here does not duplicate memory.
         self.X = torch.from_numpy(X).float()
         self.y = torch.from_numpy(y).float()
 
@@ -39,23 +39,23 @@ class FlowDataset(Dataset):
 
 
 # --- Data loading ---
-# dataset_fields.csv tiene decenas de millones de filas (~37M con la malla
-# actual). Todo lo de abajo esta pensado para minimizar el pico de memoria:
-# float32 en vez del float64 por defecto de pandas (mitad de RAM por celda),
-# y `del` + `gc.collect()` en cuanto una copia intermedia deja de hacer
-# falta, en vez de dejar que todas las copias convivan hasta el final del
-# script. Version anterior (sin esto) llego a agotar la RAM de la maquina.
+# dataset_fields.csv has tens of millions of rows (~37M with the current
+# mesh). Everything below is designed to minimise peak memory: float32
+# instead of pandas' default float64 (half the RAM per cell), and `del` +
+# `gc.collect()` as soon as an intermediate copy is no longer needed, instead
+# of letting every copy live until the end of the script. A previous version
+# (without this) ran the machine out of RAM.
 print("Loading dataset (may take a while, decenas de millones de filas) ...")
 df = pd.read_csv(SCRIPT_DIR / "dataset_fields.csv", dtype={c: np.float32 for c in FLOAT_COLS})
 print(f"Points: {len(df)}")
 
-# Split por simulacion, no por fila: las filas de una misma simulacion son
-# puntos de malla muy correlacionados entre si (celdas vecinas). Un split
-# aleatorio por fila dejaria fugar informacion geometrica de la misma
-# simulacion a train y val, subestimando el error real de generalizacion.
-# Se usa groupby().ngroup() (array de enteros compacto) en vez de construir
-# un identificador de simulacion como string por fila, que con ~37M filas
-# supondria varios GB solo en objetos string de Python.
+# Split by simulation, not by row: rows from the same simulation are mesh
+# points that are highly correlated with each other (neighbouring cells). A
+# random per-row split would leak geometric information from the same
+# simulation into both train and val, underestimating the true
+# generalisation error. groupby().ngroup() (a compact integer array) is used
+# instead of building a per-row string simulation id, which with ~37M rows
+# would cost several GB in Python string objects alone.
 group_id = df.groupby(['C1', 'C2', 'C3', 'Re', 'Alpha'], sort=False).ngroup().to_numpy()
 n_sims = int(group_id.max()) + 1
 rng = np.random.RandomState(RANDOM_STATE)
@@ -76,14 +76,14 @@ gc.collect()
 
 X_raw[:, 5] = np.log10(X_raw[:, 5])
 
-# k y omega tienen un rango dinamico muy amplio (varios ordenes de magnitud,
-# cola larga) y no llevaban ninguna adimensionalizacion fisica previa (a
-# diferencia de Ux_adim/Uy_adim/Cp) -- con MSE en escala bruta, el modelo
-# subpredecia sistematicamente los valores altos (ver docs §9.9). Se
-# transforman a log antes de escalar, igual que ya se hace con CD en
-# train_force_net.py; se deshace con exp() tras predecir (mas abajo, y en
-# app.py::compute_flow_fields). Verificado: 0 filas con k<=0 u omega<=0 en
-# las 36.87M filas del dataset real, log() no puede dar NaN/-inf aqui.
+# k and omega have a very wide dynamic range (several orders of magnitude,
+# long tail) and had no prior physical non-dimensionalisation (unlike
+# Ux_adim/Uy_adim/Cp) -- with MSE on the raw scale, the model systematically
+# underpredicted the high values. They are log-transformed before scaling,
+# as is already done with CD in train_force_net.py; this is undone with exp()
+# after predicting (further below, and in app.py::compute_flow_fields).
+# Verified: 0 rows with k<=0 or omega<=0 in the 36.87M rows of the real
+# dataset, so log() cannot produce NaN/-inf here.
 y_raw[:, 3] = np.log(y_raw[:, 3])   # k -> log(k)
 y_raw[:, 4] = np.log(y_raw[:, 4])   # omega -> log(omega)
 
@@ -92,11 +92,10 @@ X_val_raw,   y_val_raw   = X_raw[is_val],  y_raw[is_val]
 del X_raw, y_raw, is_val
 gc.collect()
 
-# Los scalers se ajustan solo con las filas de entrenamiento (sin fuga de
-# estadisticas del conjunto de validacion), igual que en train_force_net.py.
-# sklearn trabaja internamente en float64 durante el fit/transform, pero el
-# resultado se vuelve a bajar a float32 de inmediato para no arrastrar el
-# doble de memoria el resto del script.
+# Scalers are fitted on the training rows only (no leakage of validation-set
+# statistics), as in train_force_net.py. sklearn works in float64 internally
+# during fit/transform, but the result is cast back to float32 immediately
+# so the rest of the script does not carry twice the memory.
 scaler_X = StandardScaler()
 X_train_scaled = scaler_X.fit_transform(X_train_raw).astype(np.float32)
 X_val_scaled   = scaler_X.transform(X_val_raw).astype(np.float32)
@@ -192,8 +191,8 @@ with torch.no_grad():
 pred_real = np.concatenate(preds_list)
 y_real    = np.concatenate(reals_list)
 
-# Deshacer el log-transform de k/omega (columnas 3 y 4) para que MAE y
-# graficas queden en unidades fisicas reales, no en escala logaritmica.
+# Undo the log-transform of k/omega (columns 3 and 4) so that MAE and plots
+# are in real physical units, not on a log scale.
 pred_real[:, 3] = np.exp(pred_real[:, 3])
 pred_real[:, 4] = np.exp(pred_real[:, 4])
 y_real[:, 3]    = np.exp(y_real[:, 3])
@@ -222,7 +221,7 @@ fig.tight_layout()
 fig.savefig(PLOTS_DIR / "field_net_loss.png", dpi=150)
 plt.close(fig)
 
-# --- Scatter plot (submuestreado para no saturar el grafico con millones de puntos) ---
+# --- Scatter plot (subsampled so the plot is not saturated with millions of points) ---
 n_plot = min(20000, len(y_real))
 idx = np.random.RandomState(RANDOM_STATE).choice(len(y_real), n_plot, replace=False)
 fig, axes = plt.subplots(1, 5, figsize=(22, 4.5))

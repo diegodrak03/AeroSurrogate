@@ -26,13 +26,13 @@ CHORD_VALUES = [1.0, 2.0, 3.0]
 DATASET_DIR = Path(__file__).parent / "dataset"
 TEMP_DIR    = Path(__file__).parent / "_tmp"
 
-# Resolucion de malla cerca del perfil (fraccion de la cuerda). Un estudio de
-# convergencia de malla (perfil simetrico C1=C2=0.1, alpha=0, donde CL debe
-# ser exactamente 0) mostro que con lc_airfoil=0.01 (6742 celdas) la malla no
-# estructurada de Gmsh no es simetrica (solo 2.9% de los puntos tienen pareja
-# especular) y esa asimetria produce un CL espurio de hasta ~0.11 -- un sesgo
-# de la misma magnitud aparece tambien en perfiles con curvatura. Refinar a
-# 0.005 (~9600 celdas, ~1.4x mas caro) reduce el sesgo a ~0.03-0.05.
+# Mesh resolution near the airfoil (fraction of chord). A mesh convergence
+# study (symmetric airfoil C1=C2=0.1, alpha=0, where CL must be exactly 0)
+# showed that with lc_airfoil=0.01 (6742 cells) the Gmsh unstructured mesh is
+# not symmetric (only 2.9% of the points have a mirror counterpart) and that
+# asymmetry produces a spurious CL of up to ~0.11 -- a bias of the same
+# magnitude also appears on cambered airfoils. Refining to 0.005 (~9600 cells,
+# ~1.4x more expensive) reduces the bias to ~0.03-0.05.
 LC_AIRFOIL = 0.005
 
 # ============================================================
@@ -435,9 +435,9 @@ FORCES_COLS = ['Time', 'Cd', 'Cd_f', 'Cd_r', 'Cl', 'Cl_f', 'Cl_r',
 def check_convergence(case_dir, threshold=0.05):
     """Verify force coefficients converged (std/mean of last 50 Cd and Cl < threshold).
 
-    Con los ejes wind-frame fijos (ver setup_openfoam_case), Cd y Cl ya son
-    directamente drag y lift aerodinamicos -- se comprueban ambos canales
-    (antes solo se comprobaba Cd).
+    With fixed wind-frame axes (see setup_openfoam_case), Cd and Cl are
+    already the aerodynamic drag and lift -- both channels are checked
+    (previously only Cd was checked).
     """
     import pandas as pd
     coeff_path = os.path.join(case_dir, "postProcessing", "forces", "0", "coefficient.dat")

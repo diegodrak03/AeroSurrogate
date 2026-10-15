@@ -7,14 +7,14 @@ import plotly.graph_objects as go
 from pathlib import Path
 from matplotlib.path import Path as MplPath
 
-ENABLE_CL_TARGET = 0      # 1 = mostrar opción "Alcanzar un CL objetivo"
-ENABLE_CL_MIN    = 0      # 1 = mostrar restricción "Imponer CL mínimo"
+ENABLE_CL_TARGET = 0      # 1 = show the "Alcanzar un CL objetivo" (target CL) option
+ENABLE_CL_MIN    = 0      # 1 = show the "Imponer CL mínimo" (minimum CL) constraint
 
 # Physical constants (SI)
 NU_AIR         = 1.5e-5   # kinematic viscosity [m2/s]
 RHO_AIR        = 1.225    # air density at sea level [kg/m3]
 SPEED_OF_SOUND = 340.3    # speed of sound, ISA sea level [m/s]
-MACH_WARN      = 0.3      # umbral de flujo aprox. incompresible (hipotesis de simpleFoam)
+MACH_WARN      = 0.3      # approx. incompressible-flow threshold (simpleFoam assumption)
 
 # Path setup
 APP_DIR    = Path(__file__).resolve().parent
@@ -43,7 +43,7 @@ from airfoil import generate_profile
 
 # ============================================================
 #  NEURAL NETWORK ARCHITECTURES
-#  Definidas en training/models.py -- compartidas con train_*_net.py
+#  Defined in training/models.py -- shared with train_*_net.py
 # ============================================================
 
 models_dir = str(MODELS_DIR)
@@ -122,8 +122,8 @@ def compute_flow_fields(c1, c2, c3, Re, alpha):
     with torch.no_grad():
         pred_scaled = field_net(torch.tensor(features_scaled).float()).numpy()
     pred = scaler_field_y.inverse_transform(pred_scaled)
-    # FlowFieldNet predice log(k) y log(omega) (ver training/train_field_net.py) --
-    # deshacer para recuperar los valores fisicos.
+    # FlowFieldNet predicts log(k) and log(omega) (see training/train_field_net.py) --
+    # undo it to recover the physical values.
     pred[:, 3] = np.exp(pred[:, 3])
     pred[:, 4] = np.exp(pred[:, 4])
 
@@ -480,10 +480,10 @@ else:
                     top_fitness = fitness[sorted_idx[0]]
                     if top_fitness > best_fitness:
                         best_fitness    = top_fitness
-                        # population ya fue reasignada a la siguiente generacion (vstack(parents,children))
-                        # justo arriba; por elitismo, population[0] == parents[0] == el mejor individuo
-                        # de ESTA generacion (population[sorted_idx[0]] indexaria con un indice de la
-                        # poblacion vieja sobre el array ya reasignado -- bug corregido).
+                        # population was already reassigned to the next generation (vstack(parents,children))
+                        # just above; by elitism, population[0] == parents[0] == the best individual
+                        # of THIS generation (population[sorted_idx[0]] would index the reassigned array
+                        # with an index from the old population -- bug fixed).
                         best_individual = reconstruct(population[0].reshape(1, -1))[0]
 
                 if best_individual is None:
