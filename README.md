@@ -20,6 +20,10 @@ They are served through an interactive **Streamlit** app with two modes:
 
 ---
 
+AeroSurrogate is also available to use directly at https://aerosurrogate.streamlit.app/
+
+---
+
 ## Quick start (no OpenFOAM needed)
 
 The trained models, scalers and the forces dataset are already in the repository,
